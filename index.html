@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova AI Assistant - Voice Enabled</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Rajdhani (futuristic) and Inter (clean) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for the futuristic UI */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-rajdhani {
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* Main container simulating a mobile screen */
+        .mobile-screen {
+            width: 100%;
+            max-width: 430px; /* Simulates a modern phone width */
+            height: 100vh;
+            max-height: 932px; /* Simulates a modern phone height */
+            overflow: hidden;
+            border-radius: 40px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(180deg, #000000 0%, #1a0c2e 50%, #0c0c1d 100%);
+        }
+
+        /* Glassmorphism effect for cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Neon glow animation for the microphone button */
+        .mic-glow {
+            box-shadow: 0 0 10px #4f46e5, 0 0 20px #4f46e5, 0 0 30px #a855f7, 0 0 40px #a855f7;
+            animation: glow-animation 2s infinite alternate;
+        }
+        
+        .mic-glow-listening {
+             box-shadow: 0 0 15px #3b82f6, 0 0 30px #3b82f6, 0 0 45px #60a5fa, 0 0 60px #60a5fa;
+        }
+
+        @keyframes glow-animation {
+            from {
+                box-shadow: 0 0 10px #4f46e5, 0 0 20px #4f46e5, 0 0 30px #a855f7, 0 0 40px #a855f7;
+            }
+            to {
+                box-shadow: 0 0 20px #4f46e5, 0 0 30px #a855f7, 0 0 40px #a855f7, 0 0 50px #4f46e5;
+            }
+        }
+
+        /* Waveform animation styles */
+        .waveform {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .waveform.listening {
+            opacity: 1;
+        }
+        .waveform-bar {
+            width: 5px;
+            height: 10px;
+            background-color: #60a5fa;
+            border-radius: 5px;
+            animation: wave 1.5s infinite ease-in-out;
+        }
+        .waveform-bar:nth-child(2) { animation-delay: -1.4s; }
+        .waveform-bar:nth-child(3) { animation-delay: -1.3s; }
+        .waveform-bar:nth-child(4) { animation-delay: -1.2s; }
+        .waveform-bar:nth-child(5) { animation-delay: -1.1s; }
+        .waveform-bar:nth-child(6) { animation-delay: -1.0s; }
+        .waveform-bar:nth-child(7) { animation-delay: -0.9s; }
+        .waveform-bar:nth-child(8) { animation-delay: -0.8s; }
+        .waveform-bar:nth-child(9) { animation-delay: -0.7s; }
+        .waveform-bar:nth-child(10) { animation-delay: -0.6s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(5); }
+        }
+
+        /* Custom scrollbar for chat */
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-area::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        .chat-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        /* Added fade-in animation */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+
+    <!-- Mobile Screen Container -->
+    <div class="mobile-screen relative flex flex-col font-inter text-white">
+
+        <!-- Top Bar: Time, Battery, Assistant Name -->
+        <header class="absolute top-0 left-0 right-0 px-8 pt-8 pb-4 z-10 bg-gradient-to-b from-black/50 to-transparent">
+            <div class="flex justify-between items-center text-sm font-medium text-gray-300">
+                <span id="time" class="font-rajdhani font-bold text-base">9:41</span>
+                <span class="font-rajdhani font-bold text-xl tracking-wider text-white">NOVA</span>
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12" y2="20"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12" y2="18"></line></svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col justify-center pt-24 pb-40 px-4 overflow-hidden">
+            
+            <!-- Initial View: Greeting and Suggestions -->
+            <div id="initial-view" class="flex flex-col items-center justify-center h-full transition-opacity duration-500 animate-fade-in">
+                <h1 class="font-rajdhani text-4xl font-bold text-gray-300 mb-4">Hi, I'm Nova</h1>
+                <div id="suggestions-card" class="glass-card w-full max-w-md p-6 rounded-3xl">
+                    <h2 class="font-rajdhani text-2xl font-bold text-white mb-4">Suggestions</h2>
+                    <div class="grid grid-cols-2 gap-3 text-center">
+                        <button data-command="weather" class="glass-card p-3 rounded-xl hover:bg-white/20 transition-colors duration-300"><span class="text-2xl">☀️</span><p class="font-medium pointer-events-none">Weather</p></button>
+                        <button data-command="timer" class="glass-card p-3 rounded-xl hover:bg-white/20 transition-colors duration-300"><span class="text-2xl">⏱️</span><p class="font-medium pointer-events-none">Set a timer</p></button>
+                        <button data-command="call" class="glass-card p-3 rounded-xl hover:bg-white/20 transition-colors duration-300"><span class="text-2xl">📞</span><p class="font-medium pointer-events-none">Call Someone</p></button>
+                        <button data-command="message" class="glass-card p-3 rounded-xl hover:bg-white/20 transition-colors duration-300"><span class="text-2xl">💬</span><p class="font-medium pointer-events-none">Message</p></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Conversation Area -->
+            <div id="chat-area" class="chat-area flex-1 flex-col gap-4 overflow-y-auto hidden">
+                <!-- Chat bubbles will be injected here -->
+            </div>
+
+            <!-- In-Call View -->
+            <div id="in-call-view" class="hidden flex-col items-center justify-center h-full text-center animate-fade-in">
+                <div class="w-32 h-32 bg-purple-400 rounded-full mb-6 flex items-center justify-center ring-4 ring-purple-400/50">
+                    <span id="call-avatar" class="text-6xl"></span>
+                </div>
+                <h2 id="call-contact-name" class="font-rajdhani text-4xl font-bold"></h2>
+                <p id="call-status" class="text-lg text-gray-300 mt-1">Calling...</p>
+                <button id="end-call-button" class="mt-8 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition-colors duration-300">End Call</button>
+            </div>
+        </main>
+
+        <!-- Bottom Bar: Waveform and Microphone -->
+        <footer class="absolute bottom-0 left-0 right-0 p-6 flex flex-col items-center justify-end h-48 bg-gradient-to-t from-black/60 to-transparent">
+            <div id="waveform" class="waveform">
+                <!-- Waveform bars -->
+                <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+            </div>
+            <button id="mic-button" class="mic-glow w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95">
+                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Web Speech API Setup ---
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition;
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+            } else {
+                console.log("Speech Recognition not supported in this browser.");
+                micButton.disabled = true;
+            }
+
+            // --- DOM Element References ---
+            const timeEl = document.getElementById('time');
+            const micButton = document.getElementById('mic-button');
+            const waveform = document.getElementById('waveform');
+            const initialView = document.getElementById('initial-view');
+            const suggestionsCard = document.getElementById('suggestions-card');
+            const chatArea = document.getElementById('chat-area');
+            const inCallView = document.getElementById('in-call-view');
+            const endCallButton = document.getElementById('end-call-button');
+            const callStatus = document.getElementById('call-status');
+            const callContactName = document.getElementById('call-contact-name');
+            const callAvatar = document.getElementById('call-avatar');
+
+            // --- State Variables ---
+            let isListening = false;
+            let callTimerInterval;
+            let nextCommandContext = null; // To handle multi-turn commands from suggestions
+
+            // --- Update Time ---
+            function updateTime() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                timeEl.textContent = `${hours}:${minutes}`;
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // --- Event Listeners ---
+            micButton.addEventListener('click', () => {
+                if (!recognition) return;
+                nextCommandContext = null; // Reset context on manual mic press
+                isListening = !isListening;
+                if (isListening) {
+                    startListening();
+                } else {
+                    stopListening();
+                }
+            });
+
+            endCallButton.addEventListener('click', endCall);
+            
+            suggestionsCard.addEventListener('click', (event) => {
+                const command = event.target.closest('button')?.dataset.command;
+                if (command) {
+                    handleSuggestionClick(command);
+                }
+            });
+            
+            // --- Speech Recognition Event Handlers ---
+            if(recognition) {
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    addMessage(transcript, 'user');
+                    processCommand(transcript.toLowerCase());
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech recognition error:", event.error);
+                    addMessage("Sorry, I didn't catch that. Please try again.", 'assistant');
+                };
+
+                recognition.onend = () => {
+                    if (isListening) { // If it ends prematurely, stop the UI
+                       stopListening();
+                    }
+                };
+            }
+
+            // --- Core Functions ---
+            function handleSuggestionClick(command) {
+                // Switch to chat view
+                initialView.classList.add('hidden');
+                chatArea.classList.remove('hidden');
+                chatArea.innerHTML = ''; // Clear previous chat
+
+                switch (command) {
+                    case 'weather':
+                        addMessage("What's the weather?", 'user');
+                        processCommand('weather');
+                        break;
+                    case 'call':
+                        nextCommandContext = 'CALL';
+                        addMessage("Who would you like to call?", 'assistant');
+                        startListening();
+                        break;
+                    case 'message':
+                        nextCommandContext = 'MESSAGE';
+                        addMessage("Who is the message for?", 'assistant');
+                        startListening();
+                        break;
+                    case 'timer':
+                        nextCommandContext = 'TIMER';
+                        addMessage("For how long should I set the timer?", 'assistant');
+                        startListening();
+                        break;
+                }
+            }
+
+            function startListening() {
+                isListening = true;
+                if (!chatArea.classList.contains('hidden')) {
+                     // Don't clear chat if it's a follow-up
+                } else {
+                    inCallView.classList.add('hidden');
+                    chatArea.innerHTML = '';
+                    initialView.classList.add('hidden');
+                    chatArea.classList.remove('hidden');
+                }
+                
+                waveform.classList.add('listening');
+                micButton.classList.add('mic-glow-listening');
+                recognition.start();
+            }
+
+            function stopListening() {
+                isListening = false;
+                waveform.classList.remove('listening');
+                micButton.classList.remove('mic-glow-listening');
+                if (recognition) recognition.stop();
+            }
+            
+            function processCommand(command) {
+                // Handle commands that are follow-ups from suggestions
+                if (nextCommandContext) {
+                    const context = nextCommandContext;
+                    nextCommandContext = null; // Consume the context
+                    if (context === 'CALL') {
+                        processCommand(`call ${command}`);
+                        return;
+                    }
+                    if (context === 'TIMER') {
+                        processCommand(`set a timer for ${command}`);
+                        return;
+                    }
+                     if (context === 'MESSAGE') {
+                        processCommand(`message ${command}`);
+                        return;
+                    }
+                }
+
+                // Standard command processing
+                if (command.includes('call')) {
+                    let contact = "Someone";
+                    let avatar = "👤";
+                    if(command.includes('mom')) { contact = "Mom"; avatar = "👩"; }
+                    if(command.includes('dad')) { contact = "Dad"; avatar = "👨"; }
+                    if(command.includes('alex')) { contact = "Alex"; avatar = "🧑‍🚀"; }
+
+                    addMessage(`Of course. Calling ${contact} now.`, 'assistant');
+                    setTimeout(() => startCall(contact, avatar), 1500);
+                } else if (command.includes('weather')) {
+                    addMessage("The current forecast is 28°C and sunny, with a light breeze.", 'assistant');
+                    setTimeout(resetToInitialView, 3000);
+                } else if (command.includes('set a timer for')) {
+                    const duration = command.replace('set a timer for', '').trim();
+                    addMessage(`OK, timer set for ${duration}.`, 'assistant');
+                    setTimeout(resetToInitialView, 3000);
+                } else if (command.includes('message')) {
+                    addMessage("What should the message say?", 'assistant');
+                } else if (command.includes('stop') || command.includes('cancel')) {
+                    addMessage("OK, cancelling.", 'assistant');
+                    resetToInitialView();
+                }
+                else {
+                    addMessage("I'm not sure how to help with that. You can ask me to call someone or check the weather.", 'assistant');
+                    setTimeout(resetToInitialView, 4000);
+                }
+                stopListening();
+            }
+
+            function resetToInitialView() {
+                stopListening();
+                clearInterval(callTimerInterval);
+                nextCommandContext = null;
+                
+                micButton.classList.remove('hidden');
+                chatArea.classList.add('hidden');
+                inCallView.classList.add('hidden');
+                initialView.classList.remove('hidden');
+            }
+
+            function startCall(contact, avatar) {
+                chatArea.classList.add('hidden');
+                inCallView.classList.remove('hidden');
+                micButton.classList.add('hidden');
+                
+                callContactName.textContent = contact;
+                callAvatar.textContent = avatar;
+
+                let callSeconds = 0;
+                callStatus.textContent = "Ringing...";
+
+                setTimeout(() => {
+                    if (inCallView.classList.contains('hidden')) return; // Check if call was cancelled
+                    callTimerInterval = setInterval(() => {
+                        callSeconds++;
+                        const minutes = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+                        const seconds = (callSeconds % 60).toString().padStart(2, '0');
+                        callStatus.textContent = `${minutes}:${seconds}`;
+                    }, 1000);
+                }, 2000);
+            }
+
+            function endCall() {
+                resetToInitialView();
+            }
+
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                const bubble = document.createElement('div');
+                
+                messageDiv.classList.add('flex', 'w-full', 'animate-fade-in');
+                bubble.classList.add('max-w-xs', 'md:max-w-md', 'p-3', 'rounded-2xl');
+
+                if (sender === 'user') {
+                    messageDiv.classList.add('justify-end');
+                    bubble.classList.add('bg-indigo-600', 'text-white', 'rounded-br-lg');
+                } else {
+                    messageDiv.classList.add('justify-start');
+                    bubble.classList.add('glass-card', 'text-gray-200', 'rounded-bl-lg');
+                }
+
+                bubble.textContent = text;
+                messageDiv.appendChild(bubble);
+                chatArea.appendChild(messageDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+        });
+    </script>
+
+</body>
+</html>
