@@ -331,14 +331,14 @@
                             processCommand(`set a timer for ${command}`);
                             return;
                         case 'MESSAGE_RECIPIENT':
-                            messageRecipient = command;
+                            messageRecipient = command.split(" ")[0]; // Get first name
                             nextCommandContext = 'MESSAGE_CONTENT';
                             addMessage(`OK. What should the message to ${messageRecipient} say?`, 'assistant');
                             startListening();
-                            stopListening(); // Stop and restart to capture next part
-                            return;
+                            return; // Wait for the next voice input
                         case 'MESSAGE_CONTENT':
-                            addMessage(`Got it. Sending your message to ${messageRecipient}: "${command}"`, 'assistant');
+                            addMessage(`Message to ${messageRecipient}: "${command}"`, 'user');
+                            addMessage(`Message Sent`, 'system', 'confirmation');
                             setTimeout(resetToInitialView, 3000);
                             stopListening();
                             return;
@@ -351,7 +351,7 @@
                     let avatar = "👤";
                     if(command.includes('mom')) { contact = "Mom"; avatar = "👩"; }
                     if(command.includes('dad')) { contact = "Dad"; avatar = "👨"; }
-                    if(command.includes('alex')) { contact = "Alex"; avatar = "🧑‍🚀"; }
+                    if(command.includes('alex')) { contact = "Alex"; avatar = "🧑‍�"; }
 
                     addMessage(`Of course. Calling ${contact} now.`, 'assistant');
                     setTimeout(() => startCall(contact, avatar), 1500);
@@ -363,12 +363,11 @@
                     addMessage(`OK, timer set for ${duration}.`, 'assistant');
                     setTimeout(resetToInitialView, 3000);
                 } else if (command.includes('message')) {
-                    // Handle single-line message command e.g., "message mom hello"
                     const parts = command.replace('message', '').trim().split(' ');
                     const recipient = parts[0];
                     const messageBody = parts.slice(1).join(' ');
                     if (recipient && messageBody) {
-                         addMessage(`Got it. Sending your message to ${recipient}: "${messageBody}"`, 'assistant');
+                         addMessage(`Message Sent to ${recipient}`, 'system', 'confirmation');
                     } else if (recipient) {
                         messageRecipient = recipient;
                         nextCommandContext = 'MESSAGE_CONTENT';
@@ -428,24 +427,35 @@
                 resetToInitialView();
             }
 
-            function addMessage(text, sender) {
-                const messageDiv = document.createElement('div');
-                const bubble = document.createElement('div');
-                
-                messageDiv.classList.add('flex', 'w-full', 'animate-fade-in');
-                bubble.classList.add('max-w-xs', 'md:max-w-md', 'p-3', 'rounded-2xl');
+            // UPDATED: Function now handles a 'confirmation' type
+            function addMessage(text, sender, type = 'bubble') {
+                const messageContainer = document.createElement('div');
+                messageContainer.classList.add('w-full', 'flex', 'animate-fade-in');
 
-                if (sender === 'user') {
-                    messageDiv.classList.add('justify-end');
-                    bubble.classList.add('bg-indigo-600', 'text-white', 'rounded-br-lg');
+                if (type === 'confirmation') {
+                    messageContainer.classList.add('justify-center', 'py-2');
+                    messageContainer.innerHTML = `
+                        <div class="glass-card text-green-400 font-semibold text-sm py-2 px-4 rounded-full flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            <span>${text}</span>
+                        </div>
+                    `;
                 } else {
-                    messageDiv.classList.add('justify-start');
-                    bubble.classList.add('glass-card', 'text-gray-200', 'rounded-bl-lg');
+                    const bubble = document.createElement('div');
+                    bubble.classList.add('max-w-xs', 'md:max-w-md', 'p-3', 'rounded-2xl');
+                    
+                    if (sender === 'user') {
+                        messageContainer.classList.add('justify-end');
+                        bubble.classList.add('bg-indigo-600', 'text-white', 'rounded-br-lg');
+                    } else {
+                        messageContainer.classList.add('justify-start');
+                        bubble.classList.add('glass-card', 'text-gray-200', 'rounded-bl-lg');
+                    }
+                    bubble.textContent = text;
+                    messageContainer.appendChild(bubble);
                 }
 
-                bubble.textContent = text;
-                messageDiv.appendChild(bubble);
-                chatArea.appendChild(messageDiv);
+                chatArea.appendChild(messageContainer);
                 chatArea.scrollTop = chatArea.scrollHeight;
             }
         });
@@ -453,3 +463,4 @@
 
 </body>
 </html>
+�
