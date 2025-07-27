@@ -214,7 +214,8 @@
             // --- State Variables ---
             let isListening = false;
             let callTimerInterval;
-            let nextCommandContext = null; // To handle multi-turn commands from suggestions
+            let nextCommandContext = null; 
+            let messageRecipient = null; // Stores the contact for the message
 
             // --- Update Time ---
             function updateTime() {
@@ -269,10 +270,9 @@
 
             // --- Core Functions ---
             function handleSuggestionClick(command) {
-                // Switch to chat view
                 initialView.classList.add('hidden');
                 chatArea.classList.remove('hidden');
-                chatArea.innerHTML = ''; // Clear previous chat
+                chatArea.innerHTML = ''; 
 
                 switch (command) {
                     case 'weather':
@@ -280,17 +280,17 @@
                         processCommand('weather');
                         break;
                     case 'call':
-                        nextCommandContext = 'CALL';
+                        nextCommandContext = 'CALL_RECIPIENT';
                         addMessage("Who would you like to call?", 'assistant');
                         startListening();
                         break;
                     case 'message':
-                        nextCommandContext = 'MESSAGE';
+                        nextCommandContext = 'MESSAGE_RECIPIENT';
                         addMessage("Who is the message for?", 'assistant');
                         startListening();
                         break;
                     case 'timer':
-                        nextCommandContext = 'TIMER';
+                        nextCommandContext = 'TIMER_DURATION';
                         addMessage("For how long should I set the timer?", 'assistant');
                         startListening();
                         break;
@@ -299,9 +299,7 @@
 
             function startListening() {
                 isListening = true;
-                if (!chatArea.classList.contains('hidden')) {
-                     // Don't clear chat if it's a follow-up
-                } else {
+                if (chatArea.classList.contains('hidden')) {
                     inCallView.classList.add('hidden');
                     chatArea.innerHTML = '';
                     initialView.classList.add('hidden');
@@ -325,17 +323,25 @@
                 if (nextCommandContext) {
                     const context = nextCommandContext;
                     nextCommandContext = null; // Consume the context
-                    if (context === 'CALL') {
-                        processCommand(`call ${command}`);
-                        return;
-                    }
-                    if (context === 'TIMER') {
-                        processCommand(`set a timer for ${command}`);
-                        return;
-                    }
-                     if (context === 'MESSAGE') {
-                        processCommand(`message ${command}`);
-                        return;
+                    switch(context) {
+                        case 'CALL_RECIPIENT':
+                            processCommand(`call ${command}`);
+                            return;
+                        case 'TIMER_DURATION':
+                            processCommand(`set a timer for ${command}`);
+                            return;
+                        case 'MESSAGE_RECIPIENT':
+                            messageRecipient = command;
+                            nextCommandContext = 'MESSAGE_CONTENT';
+                            addMessage(`OK. What should the message to ${messageRecipient} say?`, 'assistant');
+                            startListening();
+                            stopListening(); // Stop and restart to capture next part
+                            return;
+                        case 'MESSAGE_CONTENT':
+                            addMessage(`Got it. Sending your message to ${messageRecipient}: "${command}"`, 'assistant');
+                            setTimeout(resetToInitialView, 3000);
+                            stopListening();
+                            return;
                     }
                 }
 
@@ -357,7 +363,22 @@
                     addMessage(`OK, timer set for ${duration}.`, 'assistant');
                     setTimeout(resetToInitialView, 3000);
                 } else if (command.includes('message')) {
-                    addMessage("What should the message say?", 'assistant');
+                    // Handle single-line message command e.g., "message mom hello"
+                    const parts = command.replace('message', '').trim().split(' ');
+                    const recipient = parts[0];
+                    const messageBody = parts.slice(1).join(' ');
+                    if (recipient && messageBody) {
+                         addMessage(`Got it. Sending your message to ${recipient}: "${messageBody}"`, 'assistant');
+                    } else if (recipient) {
+                        messageRecipient = recipient;
+                        nextCommandContext = 'MESSAGE_CONTENT';
+                        addMessage(`OK. What should the message to ${messageRecipient} say?`, 'assistant');
+                        startListening();
+                    } else {
+                         addMessage("I can help with that. Who is the message for?", 'assistant');
+                         nextCommandContext = 'MESSAGE_RECIPIENT';
+                         startListening();
+                    }
                 } else if (command.includes('stop') || command.includes('cancel')) {
                     addMessage("OK, cancelling.", 'assistant');
                     resetToInitialView();
@@ -373,6 +394,7 @@
                 stopListening();
                 clearInterval(callTimerInterval);
                 nextCommandContext = null;
+                messageRecipient = null;
                 
                 micButton.classList.remove('hidden');
                 chatArea.classList.add('hidden');
@@ -392,7 +414,7 @@
                 callStatus.textContent = "Ringing...";
 
                 setTimeout(() => {
-                    if (inCallView.classList.contains('hidden')) return; // Check if call was cancelled
+                    if (inCallView.classList.contains('hidden')) return;
                     callTimerInterval = setInterval(() => {
                         callSeconds++;
                         const minutes = Math.floor(callSeconds / 60).toString().padStart(2, '0');
